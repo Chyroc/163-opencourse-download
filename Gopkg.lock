@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:9fce3c83fc15e8a9d4ce4592a4a695dc3bd2d387bf0b76104f68dcfd66db7483"
+  name = "github.com/Chyroc/download"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1d6845a2c584bfceda03f924b7219b9fba95d1a5"
+
+[[projects]]
   digest = "1:a62f6ed230a8cd138a9efbe718e7d0b0294f139266f5f55cd942769a9aac8de2"
   name = "github.com/PuerkitoBio/goquery"
   packages = ["."]
@@ -56,6 +64,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Chyroc/download",
     "github.com/PuerkitoBio/goquery",
     "github.com/urfave/cli",
     "golang.org/x/text/encoding/simplifiedchinese",

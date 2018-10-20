@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -13,6 +14,22 @@ import (
 type course struct {
 	url   string
 	title string
+}
+
+var downloadURL = regexp.MustCompile(`appsrc : '(.*?)',`)
+
+func getDownloadURL(url string) (string, error) {
+	html, err := httpGet(url)
+	if err != nil {
+		return "", err
+	}
+
+	match := downloadURL.FindStringSubmatch(html)
+	if len(match) < 2 {
+		return "", fmt.Errorf("不合法的url：%s", url)
+	}
+
+	return strings.Replace(match[1], "-list.m3u8", ".flv", -1), err
 }
 
 func getCourseList(url string) ([]course, error) {
@@ -101,4 +118,12 @@ func httpGet(url string) (string, error) {
 
 func gbkToUtf8(s []byte) ([]byte, error) {
 	return simplifiedchinese.GBK.NewDecoder().Bytes(s)
+}
+
+func lastFilename(filename string) string {
+	i := strings.LastIndex(filename, "/")
+	if i == -1 {
+		return filename
+	}
+	return filename[i:]
 }
