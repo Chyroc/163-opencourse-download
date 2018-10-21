@@ -3,15 +3,17 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/Chyroc/download"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/Chyroc/download"
 	"github.com/urfave/cli"
 )
+
+var dir string
 
 func main() {
 	app := cli.NewApp()
@@ -22,6 +24,13 @@ func main() {
 		}
 		return run(c.Args().Get(0))
 	}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "dir",
+			Usage:       "视频存放位置",
+			Destination: &dir,
+		},
+	}
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
@@ -29,6 +38,14 @@ func main() {
 }
 
 func run(url string) error {
+	if dir == "" {
+		return fmt.Errorf("请指定 -dir")
+	}
+
+	if err := ensureDirExist(dir); err != nil {
+		return err
+	}
+
 	courses, err := getCourseList(url)
 	if err != nil {
 		return err
@@ -39,8 +56,7 @@ func run(url string) error {
 	for index, course := range courses {
 		fmt.Printf("%d\t%s\n", index, course.title)
 	}
-	fmt.Println()
-	fmt.Printf("输入要下载的文件序号（%d-%d）下载该文件\n输入1,10,21下载序号为1和10和21的文件\n输入all选在下载所有文件\n", 0, len(courses)-1)
+	fmt.Printf("\n输入要下载的文件序号（%d-%d）下载该文件\n输入1,10,21下载序号为1和10和21的文件\n输入all选在下载所有文件\n\n", 0, len(courses)-1)
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -77,9 +93,8 @@ func run(url string) error {
 				return err
 			}
 
-			ext := filepath.Ext(url)
-
-			if err = download.Download(url, "/tmp/"+courses[index].title+ext, 20); err != nil {
+			savefile := filepath.Join(dir, courses[index].title+filepath.Ext(url))
+			if err = download.Download(url, savefile, 20); err != nil {
 				return err
 			}
 		}
