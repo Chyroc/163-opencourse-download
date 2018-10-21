@@ -56,7 +56,13 @@ func run(url string) error {
 	for index, course := range courses {
 		fmt.Printf("%d\t%s\n", index, course.title)
 	}
-	fmt.Printf("\n输入要下载的文件序号（%d-%d）下载该文件\n输入1,10,21下载序号为1和10和21的文件\n输入all选在下载所有文件\n\n", 0, len(courses)-1)
+	fmt.Printf(`
+输入要下载的文件序号（%d-%d）下载该文件
+输入"1,10,21"下载序号为1和10和21的文件
+输入"5-8"下载序号为5、6、7、8的文件
+输入"all"选在下载所有文件
+
+`, 0, len(courses)-1)
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -73,16 +79,40 @@ func run(url string) error {
 				fileIndex = append(fileIndex, i)
 			}
 		} else {
-			gets := strings.Split(line, ",")
-			for _, v := range gets {
-				if v == "" {
-					continue
+			for _, comma := range strings.Split(line, ",") {
+				if strings.Index(comma, "-") != -1 {
+					barList := strings.Split(comma, "-")
+					if len(barList) != 2 {
+						return fmt.Errorf("不合法的序号：%s", line)
+					}
+					start := strings.TrimSpace(barList[0])
+					end := strings.TrimSpace(barList[1])
+					if start == "" || end == "" {
+						return fmt.Errorf("不合法的序号：%s", line)
+					}
+					a, err := strconv.Atoi(start)
+					if err != nil {
+						return fmt.Errorf("不合法的序号：%s", line)
+					}
+					b, err := strconv.Atoi(end)
+					if err != nil {
+						return fmt.Errorf("不合法的序号：%s", line)
+					}
+
+					for i := a; i <= b; i++ {
+						fileIndex = append(fileIndex, i)
+					}
+				} else {
+					v := strings.TrimSpace(comma)
+					if v == "" {
+						continue
+					}
+					i, err := strconv.Atoi(v)
+					if err != nil {
+						return fmt.Errorf("不合法的序号：%s", line)
+					}
+					fileIndex = append(fileIndex, i)
 				}
-				i, err := strconv.Atoi(strings.TrimSpace(v))
-				if err != nil {
-					return fmt.Errorf("不合法的序号：%s", line)
-				}
-				fileIndex = append(fileIndex, i)
 			}
 		}
 
