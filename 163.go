@@ -2,13 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
 type course struct {
@@ -94,36 +91,4 @@ func getCourseListOfSpecial(url string) ([]course, error) {
 	})
 
 	return courses, nil
-}
-
-func httpGet(url string) (string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	bs, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	bs, err = gbkToUtf8(bs)
-	if err != nil {
-		return "", err
-	}
-
-	return string(bs), nil
-}
-
-func gbkToUtf8(s []byte) ([]byte, error) {
-	return simplifiedchinese.GBK.NewDecoder().Bytes(s)
-}
-
-func lastFilename(filename string) string {
-	i := strings.LastIndex(filename, "/")
-	if i == -1 {
-		return filename
-	}
-	return filename[i:]
 }

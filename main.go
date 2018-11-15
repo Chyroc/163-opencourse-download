@@ -3,13 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/Chyroc/download"
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/Chyroc/download"
 	"github.com/urfave/cli"
 )
 
@@ -72,63 +73,87 @@ func run(url string) error {
 			return err
 		}
 
-		var fileIndex []int
-		var line = strings.TrimSpace(string(bs))
-		if line == "all" {
-			for i := range courses {
-				fileIndex = append(fileIndex, i)
-			}
-		} else {
-			for _, comma := range strings.Split(line, ",") {
-				if strings.Index(comma, "-") != -1 {
-					barList := strings.Split(comma, "-")
-					if len(barList) != 2 {
-						return fmt.Errorf("不合法的序号：%s", line)
-					}
-					start := strings.TrimSpace(barList[0])
-					end := strings.TrimSpace(barList[1])
-					if start == "" || end == "" {
-						return fmt.Errorf("不合法的序号：%s", line)
-					}
-					a, err := strconv.Atoi(start)
-					if err != nil {
-						return fmt.Errorf("不合法的序号：%s", line)
-					}
-					b, err := strconv.Atoi(end)
-					if err != nil {
-						return fmt.Errorf("不合法的序号：%s", line)
-					}
-
-					for i := a; i <= b; i++ {
-						fileIndex = append(fileIndex, i)
-					}
-				} else {
-					v := strings.TrimSpace(comma)
-					if v == "" {
-						continue
-					}
-					i, err := strconv.Atoi(v)
-					if err != nil {
-						return fmt.Errorf("不合法的序号：%s", line)
-					}
-					fileIndex = append(fileIndex, i)
-				}
-			}
+		fileIndex, err := analysisIndex(string(bs), len(courses))
+		if err != nil {
+			return err
 		}
 
-		for _, index := range fileIndex {
-			fmt.Printf("下载：%s ...\n", courses[index].title)
-			url, err := getDownloadURL(courses[index].url)
-			if err != nil {
-				return err
-			}
+		return down(courses, fileIndex)
+	}
 
-			savefile := filepath.Join(dir, courses[index].title+filepath.Ext(url))
-			if err = download.Download(url, savefile, 20); err != nil {
-				return err
+	return nil
+}
+
+func analysisIndex(line string, coursesLen int) ([]int, error) {
+	line = strings.TrimSpace(line)
+
+	var fileIndex []int
+	if line == "all" {
+		for i := 0; i < coursesLen; i++ {
+			fileIndex = append(fileIndex, i)
+		}
+	} else {
+		for _, comma := range strings.Split(line, ",") {
+			if strings.Index(comma, "-") != -1 {
+				barList := strings.Split(comma, "-")
+				if len(barList) != 2 {
+					return nil, fmt.Errorf("不合法的序号：%s", line)
+				}
+				start := strings.TrimSpace(barList[0])
+				end := strings.TrimSpace(barList[1])
+				if start == "" || end == "" {
+					return nil, fmt.Errorf("不合法的序号：%s", line)
+				}
+				a, err := strconv.Atoi(start)
+				if err != nil {
+					return nil, fmt.Errorf("不合法的序号：%s", line)
+				}
+				b, err := strconv.Atoi(end)
+				if err != nil {
+					return nil, fmt.Errorf("不合法的序号：%s", line)
+				}
+
+				for i := a; i <= b; i++ {
+					fileIndex = append(fileIndex, i)
+				}
+			} else {
+				v := strings.TrimSpace(comma)
+				if v == "" {
+					continue
+				}
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					return nil, fmt.Errorf("不合法的序号：%s", line)
+				}
+				fileIndex = append(fileIndex, i)
 			}
 		}
 	}
 
+	return fileIndex, nil
+}
+
+func down(courses []course, fileIndex []int) error {
+	if len(fileIndex) == 0 {
+		return nil
+	}
+	sort.Ints(fileIndex)
+
+	if fileIndex[0] < 0 || fileIndex[len(fileIndex)-1] >= len(courses) {
+		return fmt.Errorf("不合法的序号（超出范围）：%v", fileIndex)
+	}
+
+	for _, index := range fileIndex {
+		fmt.Printf("下载：%s ...\n", courses[index].title)
+		url, err := getDownloadURL(courses[index].url)
+		if err != nil {
+			return err
+		}
+
+		savefile := filepath.Join(dir, courses[index].title+filepath.Ext(url))
+		if err = download.Download(url, savefile, 20); err != nil {
+			return err
+		}
+	}
 	return nil
 }
